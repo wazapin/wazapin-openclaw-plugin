@@ -12,7 +12,7 @@ import { CHANNEL_KEY, wazapinChannelPlugin } from "./src/channel.js";
 
 export { CHANNEL_KEY, resolveAccount, wazapinChannelPlugin } from "./src/channel.js";
 export type { ResolvedAccount } from "./src/channel.js";
-export { parseInboundEvent, verifySignature } from "./src/webhook.js";
+export { parseInboundEvent, verifySvixSignature } from "./src/webhook.js";
 
 export default defineChannelPluginEntry({
   id: CHANNEL_KEY,

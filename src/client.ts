@@ -85,3 +85,27 @@ export function wazapinSendMedia(params: WazapinSendMediaParams): Promise<Wazapi
     },
   );
 }
+
+export async function wazapinFetchMessageText(params: {
+  apiKey: string;
+  messageId: string;
+  orgSlug?: string;
+  apiBase?: string;
+}): Promise<string> {
+  const resp = await fetch(
+    `${params.apiBase ?? DEFAULT_API_BASE}/v1/messages/${params.messageId}`,
+    {
+      method: "GET",
+      headers: headers(params.apiKey, params.orgSlug),
+    },
+  );
+  if (!resp.ok) return "";
+  const body = (await resp.json().catch(() => ({}))) as {
+    data?: { content?: { text?: string } | string; text?: string };
+  };
+  const data = body.data ?? {};
+  if (typeof data.content === "object" && data.content !== null) {
+    return data.content.text ?? "";
+  }
+  return data.text ?? "";
+}

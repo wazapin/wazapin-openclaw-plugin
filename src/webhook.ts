@@ -1,46 +1,76 @@
 /**
- * Wazapin developer webhook inbound: signature verification + event parsing.
+ * Wazapin developer webhook inbound.
  *
- * Payload shape: { event_id, event_type, data, ... }
- *   - event_type "message.new" -> inbound WhatsApp message
- *   - event_type "message.sent" / "contact.updated" / "conversation.updated" -> ignored
+ * Official payload (Svix): { event_id, event_type, data } where message.new
+ * data is metadata only: { message_id, conversation_id, contact_id,
+ * channel_id, direction, from_phone, msg_type, ... }. Fetch the message text
+ * via GET /v1/messages/{message_id} (see client.fetchMessageText).
  *
- * Dispatch into OpenClaw sessions uses the channel-inbound lifecycle
- * (openclaw/plugin-sdk/inbound-reply-dispatch); plug this receiver into your
- * gateway's HTTP surface (see README "Webhooks").
+ * Signature: Svix scheme — HMAC-SHA256 of `${id}.${timestamp}.${body}` keyed
+ * by the base64-decoded secret, base64-encoded, compared against the
+ * svix-signature header (values may be "v1,<sig>"), with a 5-minute
+ * timestamp tolerance.
  */
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 export interface WazapinInboundMessage {
   chatId: string;
   authorId: string;
   authorName: string;
-  text: string;
   messageId?: string;
-  timestamp?: string;
+  conversationId?: string;
+  channelId?: string;
+  msgType: string;
   raw: unknown;
 }
 
-export function verifySignature(body: Buffer | string, signature: string, secret: string): boolean {
-  if (!signature || !secret) return false;
-  const expected = "sha256=" + createHmac("sha256", secret).update(body).digest("hex");
-  const a = Buffer.from(signature);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+export function verifySvixSignature(params: {
+  id: string;
+  timestamp: string;
+  body: string;
+  signatureHeader: string;
+  secret: string;
+}): boolean {
+  const { id, timestamp, body, signatureHeader, secret } = params;
+  if (!signatureHeader || !secret) return false;
+
+  // 5-minute timestamp tolerance.
+  const now = Math.floor(Date.now() / 1000);
+  const ts = Number(timestamp);
+  if (!Number.isFinite(ts) || Math.abs(now - ts) > 300) return false;
+
+  let secretBytes: Buffer;
+  try {
+    secretBytes = Buffer.from(secret, "base64");
+  } catch {
+    return false;
+  }
+
+  const expected = createHmac("sha256", secretBytes)
+    .update(`${id}.${timestamp}.${body}`)
+    .digest("base64");
+
+  for (const item of signatureHeader.split(" ")) {
+    const candidate = item.trim().replace(/^v1,/, "");
+    if (!candidate) continue;
+    const a = Buffer.from(candidate);
+    const b = Buffer.from(expected);
+    if (a.length === b.length && timingSafeEqual(a, b)) return true;
+  }
+  return false;
 }
 
 export function parseInboundEvent(payload: Record<string, any>): WazapinInboundMessage | null {
   if (payload.event_type !== "message.new") return null;
   const data = payload.data ?? {};
-  const content =
-    typeof data.content === "object" && data.content !== null ? data.content : {};
   return {
-    chatId: String(data.from_phone ?? data.from ?? ""),
-    authorId: String(data.from_phone ?? data.from ?? ""),
-    authorName: String(data.contact_name ?? data.from ?? ""),
-    text: String(content.text ?? data.text ?? ""),
-    messageId: data.id ? String(data.id) : undefined,
-    timestamp: data.created_at ? String(data.created_at) : undefined,
+    chatId: String(data.from_phone ?? ""),
+    authorId: String(data.from_phone ?? ""),
+    authorName: String(data.from_phone ?? ""),
+    messageId: data.message_id ? String(data.message_id) : undefined,
+    conversationId: data.conversation_id ? String(data.conversation_id) : undefined,
+    channelId: data.channel_id ? String(data.channel_id) : undefined,
+    msgType: String(data.msg_type ?? "text"),
     raw: payload,
   };
 }
