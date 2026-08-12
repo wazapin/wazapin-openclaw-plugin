@@ -1,0 +1,36 @@
+{
+  "id": "wazapin",
+  "channels": ["wazapin"],
+  "name": "Wazapin",
+  "description": "Wazapin WhatsApp channel plugin",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  },
+  "channelConfigs": {
+    "wazapin": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "apiKey": { "type": "string" },
+          "token": { "type": "string" },
+          "orgSlug": { "type": "string" },
+          "apiBase": { "type": "string" },
+          "channelId": { "type": "string" },
+          "webhookSecret": { "type": "string" },
+          "allowFrom": { "type": "array", "items": { "type": "string" } },
+          "dmSecurity": { "type": "string" }
+        }
+      },
+      "uiHints": {
+        "apiKey": { "label": "Wazapin API key", "sensitive": true },
+        "token": { "label": "Wazapin API key", "sensitive": true },
+        "webhookSecret": { "label": "Webhook secret", "sensitive": true },
+        "orgSlug": { "label": "Organization slug" },
+        "channelId": { "label": "Default channel ID" }
+      }
+    }
+  }
+}

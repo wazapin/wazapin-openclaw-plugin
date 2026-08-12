@@ -1,40 +1,57 @@
 # Wazapin OpenClaw Plugin
 
-WhatsApp channel plugin for [OpenClaw](https://github.com/openclaw/openclaw) — send and receive WhatsApp messages through Wazapin.
-
-## Install
-```bash
-openclaw plugin install @wazapin/openclaw-plugin
-```
-
-## Config
-```env
-WAZAPIN_API_KEY=wzp_xxx        # Required: API key from app.wazapin.com
-WAZAPIN_ORG_SLUG=ujang         # Optional: organization slug (multi-org)
-WAZAPIN_API_BASE=https://api.wazapin.id  # Optional: API base URL
-WAZAPIN_WEBHOOK_SECRET=xxx     # Optional: webhook signature verification
-```
-
-## Features
-- ✅ Send text, template, media messages
-- ✅ Receive inbound messages via webhook
-- ✅ Delivery + read receipts
-- ✅ Conversation threading
-- ✅ Multi-org support
-- ✅ Webhook signature verification
-
-## Architecture
-```
-WhatsApp → Wazapin API → Webhook → OpenClaw (inbound)
-OpenClaw → Wazapin API → WhatsApp (outbound)
-```
+Wazapin WhatsApp channel plugin for [OpenClaw](https://github.com/openclaw/openclaw) — send and receive WhatsApp messages through the Wazapin API.
 
 ## Status
 
-⚠️ **Port in progress.** The current `src/index.ts` targets an older
-`ChannelPlugin` API (`canSendText`, `config.fields`, `handleInbound`,
-`send(message, account)`) that does not exist in the published `openclaw`
-package. It must be ported to the current contract —
-`createChatChannelPlugin` / `createChannelPluginBase` from
-`openclaw/plugin-sdk/channel-core` (config / setup / security.dm / outbound /
-inbound). Build currently fails typecheck until the port lands.
+✅ **Ported to the current OpenClaw `ChannelPlugin` contract** (`createChatChannelPlugin` / `createChannelPluginBase` from `openclaw/plugin-sdk/channel-core`) and typecheck-verified against `openclaw@2026.7.1-2`.
+
+## What it implements
+
+- **Config** — `channels.wazapin` account resolution (`apiKey`, `orgSlug`, `apiBase`, `channelId`, `webhookSecret`, `allowFrom`, `dmSecurity`)
+- **Setup** — `applyAccountConfig` writes channel config
+- **Security** — `security.dm` allowlist (from `allowFrom`) + DM policy
+- **Outbound** — `sendText` / `sendMedia` via the Wazapin API (`POST /v1/messages`)
+- **Threading** — `topLevelReplyToMode: "reply"`
+- **Inbound** — webhook receiver + parser (`message.new` → inbound message; `message.sent` / `contact.updated` / `conversation.updated` ignored), HMAC-SHA256 signature verification (`X-Webhook-Signature`)
+
+## Config
+
+```yaml
+# config.yaml
+channels:
+  wazapin:
+    enabled: true
+    apiKey: "wzp_xxx"            # or token:
+    orgSlug: "acme"              # optional
+    apiBase: "https://api.wazapin.id"
+    channelId: "wzp_ch_xxx"      # optional default channel
+    webhookSecret: "..."         # optional
+    allowFrom: ["+628123456789"] # DM allowlist
+    dmSecurity: "allowlist"
+```
+
+## Files
+
+```
+├── index.ts              # defineChannelPluginEntry
+├── openclaw.plugin.json  # manifest + channel config schema
+└── src/
+    ├── channel.ts        # createChatChannelPlugin (config/setup/security/outbound)
+    ├── client.ts         # Wazapin API client (sendText/sendMedia)
+    └── webhook.ts        # inbound: signature verify + message.new parser
+```
+
+## Webhooks
+
+Point the Wazapin dashboard webhook at your gateway's HTTP surface and route
+`event_type=message.new` payloads into `parseInboundEvent` (see `src/webhook.ts`).
+Session dispatch follows the OpenClaw channel-inbound lifecycle.
+
+## Dev
+
+```bash
+npm install
+npm run typecheck   # tsc --noEmit against openclaw@2026.7.1-2
+npm run build
+```

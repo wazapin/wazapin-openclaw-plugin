@@ -6,17 +6,30 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "openclaw.plugin.json"
   ],
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "wazapin",
+      "label": "Wazapin WhatsApp",
+      "blurb": "Connect OpenClaw to WhatsApp via Wazapin."
+    }
+  },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --out-dir dist",
-    "dev": "tsup src/index.ts --format esm --watch",
+    "build": "tsup src/index.ts src/channel.ts --format esm --dts --out-dir dist",
+    "dev": "tsup src/index.ts src/channel.ts --format esm --watch",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
     "openclaw": "2026.7.1-2"
   },
   "devDependencies": {
+    "@types/node": "^22.20.1",
     "tsup": "^8.0.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.0"
@@ -27,7 +40,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/wazapin/wazapin",
-    "directory": "packages/openclaw-plugin"
+    "url": "https://github.com/wazapin/wazapin-openclaw-plugin"
   }
 }
