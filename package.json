@@ -1,0 +1,33 @@
+{
+  "name": "@wazapin/openclaw-plugin",
+  "version": "0.1.0",
+  "description": "Wazapin WhatsApp channel plugin for OpenClaw — send/receive WhatsApp messages, manage channels, multi-org support.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --out-dir dist",
+    "dev": "tsup src/index.ts --format esm --watch",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "openclaw": "2026.7.1-2"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.0"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wazapin/wazapin",
+    "directory": "packages/openclaw-plugin"
+  }
+}
