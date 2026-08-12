@@ -13,7 +13,7 @@ Wazapin WhatsApp channel plugin for [OpenClaw](https://github.com/openclaw/openc
 - **Security** — `security.dm` allowlist (from `allowFrom`) + DM policy
 - **Outbound** — `sendText` / `sendMedia` via the Wazapin API (`POST /v1/messages`)
 - **Threading** — `topLevelReplyToMode: "reply"`
-- **Inbound** — webhook receiver + parser (`message.new` → inbound message; `message.sent` / `contact.updated` / `conversation.updated` ignored), HMAC-SHA256 signature verification (`X-Webhook-Signature`)
+- **Inbound** — webhook receiver + parser (`message.new` → inbound message; `message.sent` / `contact.updated` / `conversation.updated` ignored), **Svix signature verification** (`svix-id` / `svix-timestamp` / `svix-signature`, HMAC-SHA256, 5-min tolerance); message text fetched via `GET /v1/messages/{message_id}`
 
 ## Config
 
